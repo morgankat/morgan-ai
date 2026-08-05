@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>MORGAN AI</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- Splash / Boot Screen -->
+<div id="bootScreen" class="boot-screen">
+  <div class="boot-content">
+    <div class="boot-logo">
+      <svg viewBox="0 0 100 100" class="boot-icon">
+        <defs>
+          <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#00f0ff;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#7000ff;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <polygon points="50,5 95,25 95,75 50,95 5,75 5,25" fill="none" stroke="url(#grad1)" stroke-width="2"/>
+        <polygon points="50,20 80,35 80,65 50,80 20,65 20,35" fill="url(#grad1)" opacity="0.3"/>
+        <text x="50" y="58" text-anchor="middle" fill="#00f0ff" font-family="Orbitron" font-size="28" font-weight="900">M</text>
+      </svg>
+    </div>
+    <div class="boot-title">MORGAN AI</div>
+    <div class="boot-subtitle">Personal Intelligence System</div>
+    <div class="boot-status" id="bootStatus">Initializing...</div>
+    <div class="boot-bar">
+      <div class="boot-progress" id="bootProgress"></div>
+    </div>
+    <div class="boot-version">v1.0.0 Foundation</div>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app" class="app hidden">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo-small">
+        <svg viewBox="0 0 40 40" width="32" height="32">
+          <polygon points="20,2 38,11 38,29 20,38 2,29 2,11" fill="none" stroke="#00f0ff" stroke-width="1.5"/>
+          <text x="20" y="25" text-anchor="middle" fill="#00f0ff" font-family="Orbitron" font-size="14" font-weight="900">M</text>
+        </svg>
+      </div>
+      <span class="header-title">MORGAN AI</span>
+    </div>
+    <div class="header-right">
+      <div class="connection-pill" id="connectionPill">
+        <span class="conn-dot" id="connDot"></span>
+        <span id="connText">Offline</span>
+      </div>
+      <button class="icon-btn" id="menuBtn" onclick="toggleSidebar()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Sidebar Navigation -->
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar-panel">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <svg viewBox="0 0 40 40" width="36" height="36">
+            <polygon points="20,2 38,11 38,29 20,38 2,29 2,11" fill="none" stroke="#00f0ff" stroke-width="1.5"/>
+            <text x="20" y="25" text-anchor="middle" fill="#00f0ff" font-family="Orbitron" font-size="14" font-weight="900">M</text>
+          </svg>
+        </div>
+        <div>
+          <div class="sidebar-title">MORGAN AI</div>
+          <div class="sidebar-version">v1.0.0</div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">NAVIGATION</div>
+      <a href="#" class="nav-item active" onclick="navigateTo('dashboard'); return false;">
+        <span class="nav-icon">&#127968;</span>
+        <span>Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" onclick="navigateTo('chat'); return false;">
+        <span class="nav-icon">&#128172;</span>
+        <span>AI Chat</span>
+        <span class="nav-badge" id="chatBadge">0</span>
+      </a>
+      <a href="#" class="nav-item" onclick="navigateTo('trading'); return false;">
+        <span class="nav-icon">&#128200;</span>
+        <span>Trading Assistant</span>
+      </a>
+      <a href="#" class="nav-item" onclick="navigateTo('memory'); return false;">
+        <span class="nav-icon">&#128218;</span>
+        <span>Memory</span>
+      </a>
+      <a href="#" class="nav-item" onclick="navigateTo('voice'); return false;">
+        <span class="nav-icon">&#127908;</span>
+        <span>Voice</span>
+      </a>
+
+      <div class="sidebar-section">SYSTEM</div>
+      <a href="#" class="nav-item" onclick="navigateTo('settings'); return false;">
+        <span class="nav-icon">&#9881;</span>
+        <span>Settings</span>
+      </a>
+      <a href="#" class="nav-item" onclick="navigateTo('about'); return false;">
+        <span class="nav-icon">&#8505;</span>
+        <span>About</span>
+      </a>
+
+      <div class="sidebar-footer">
+        <div class="memory-bar">
+          <div class="memory-label">Memory Usage</div>
+          <div class="memory-track">
+            <div class="memory-fill" id="memoryFill" style="width:0%"></div>
+          </div>
+          <div class="memory-text" id="memoryText">0 / 0 entries</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content Area -->
+  <main class="main-content" id="mainContent">
+
+    <!-- DASHBOARD -->
+    <section id="page-dashboard" class="page active">
+      <div class="page-header">
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-subtitle">System Overview</p>
+      </div>
+
+      <div class="status-grid">
+        <div class="status-card" id="statusAI">
+          <div class="status-icon ai">&#129504;</div>
+          <div class="status-info">
+            <div class="status-label">AI Brain</div>
+            <div class="status-value" id="aiStatusText">Checking...</div>
+          </div>
+          <div class="status-indicator" id="aiIndicator"></div>
+        </div>
+        <div class="status-card" id="statusMemory">
+          <div class="status-icon memory">&#128218;</div>
+          <div class="status-info">
+            <div class="status-label">Memory</div>
+            <div class="status-value" id="memoryStatusText">Active</div>
+          </div>
+          <div class="status-indicator active"></div>
+        </div>
+        <div class="status-card" id="statusVoice">
+          <div class="status-icon voice">&#127908;</div>
+          <div class="status-info">
+            <div class="status-label">Voice</div>
+            <div class="status-value" id="voiceStatusText">Ready</div>
+          </div>
+          <div class="status-indicator active"></div>
+        </div>
+        <div class="status-card" id="statusTrading">
+          <div class="status-icon trading">&#128200;</div>
+          <div class="status-info">
+            <div class="status-label">Trading</div>
+            <div class="status-value" id="tradingStatusText">Ready</div>
+          </div>
+          <div class="status-indicator active"></div>
+        </div>
+      </div>
+
+      <div class="action-grid">
+        <button class="action-card primary" onclick="navigateTo('chat')">
+          <div class="action-icon">&#128172;</div>
+          <div class="action-title">Talk to Morgan</div>
+          <div class="action-desc">Ask anything, get intelligent answers</div>
+        </button>
+        <button class="action-card" onclick="navigateTo('trading')">
+          <div class="action-icon">&#128200;</div>
+          <div class="action-title">Trading Assistant</div>
+          <div class="action-desc">Analysis, strategy & risk management</div>
+        </button>
+        <button class="action-card" onclick="navigateTo('voice')">
+          <div class="action-icon">&#127908;</div>
+          <div class="action-title">Voice Assistant</div>
+          <div class="action-desc">Speak to Morgan hands-free</div>
+        </button>
+        <button class="action-card" onclick="navigateTo('settings')">
+          <div class="action-icon">&#9881;</div>
+          <div class="action-title">Settings</div>
+          <div class="action-desc">Configure API keys & preferences</div>
+        </button>
+      </div>
+
+      <div class="brain-section">
+        <div class="section-header">
+          <h3 class="section-title">&#129504; Brain Configuration</h3>
+        </div>
+        <div class="brain-grid">
+          <div class="brain-card" data-model="openai/gpt-5.1">
+            <div class="brain-rank">1</div>
+            <div class="brain-name">GPT-5.1</div>
+            <div class="brain-provider">OpenAI</div>
+            <div class="brain-role">Main reasoning, coding, planning</div>
+            <div class="brain-status active">Active</div>
+          </div>
+          <div class="brain-card" data-model="anthropic/claude-sonnet-4">
+            <div class="brain-rank">2</div>
+            <div class="brain-name">Claude Sonnet</div>
+            <div class="brain-provider">Anthropic</div>
+            <div class="brain-role">Large codebases, analysis</div>
+            <div class="brain-status">Standby</div>
+          </div>
+          <div class="brain-card" data-model="google/gemini-2.5-pro">
+            <div class="brain-rank">3</div>
+            <div class="brain-name">Gemini Pro</div>
+            <div class="brain-provider">Google</div>
+            <div class="brain-role">Multimodal, images, docs</div>
+            <div class="brain-status">Standby</div>
+          </div>
+          <div class="brain-card" data-model="deepseek/deepseek-r1">
+            <div class="brain-rank">4</div>
+            <div class="brain-name">DeepSeek R1</div>
+            <div class="brain-provider">DeepSeek</div>
+            <div class="brain-role">Math, technical reasoning</div>
+            <div class="brain-status">Standby</div>
+          </div>
+          <div class="brain-card" data-model="meta/llama-4">
+            <div class="brain-rank">5</div>
+            <div class="brain-name">Llama 4</div>
+            <div class="brain-provider">Meta</div>
+            <div class="brain-role">Fast general-purpose</div>
+            <div class="brain-status">Standby</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="recent-section">
+        <div class="section-header">
+          <h3 class="section-title">&#128336; Recent Activity</h3>
+          <button class="text-btn" onclick="clearActivity()">Clear</button>
+        </div>
+        <div class="activity-list" id="activityList">
+          <div class="activity-empty">No recent activity</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI CHAT -->
+    <section id="page-chat" class="page">
+      <div class="chat-container">
+        <div class="chat-header">
+          <div class="chat-header-info">
+            <div class="chat-avatar">&#129504;</div>
+            <div>
+              <div class="chat-name">Morgan</div>
+              <div class="chat-status" id="chatStatus">Online</div>
+            </div>
+          </div>
+          <div class="chat-header-actions">
+            <button class="icon-btn" onclick="clearChat()" title="Clear chat">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3,6 5,6 21,6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </button>
+            <button class="icon-btn" onclick="exportChat()" title="Export chat">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7,10 12,15 17,10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+          <div class="message bot">
+            <div class="message-avatar">&#129504;</div>
+            <div class="message-content">
+              <div class="message-text">Hello! I'm Morgan, your personal AI assistant. I can help you with coding, trading analysis, general questions, and more. What would you like to explore today?</div>
+              <div class="message-time">Now</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-typing" id="chatTyping" style="display:none;">
+          <div class="typing-indicator">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+
+        <div class="chat-input-area">
+          <div class="model-selector">
+            <select id="modelSelect" class="model-select">
+              <option value="auto">&#129504; Auto (Smart Routing)</option>
+              <option value="openai/gpt-5.1">GPT-5.1 (Reasoning)</option>
+              <option value="anthropic/claude-sonnet-4">Claude Sonnet (Code)</option>
+              <option value="google/gemini-2.5-pro">Gemini Pro (Vision)</option>
+              <option value="deepseek/deepseek-r1">DeepSeek R1 (Math)</option>
+              <option value="meta/llama-4">Llama 4 (Fast)</option>
+            </select>
+          </div>
+          <div class="input-row">
+            <button class="icon-btn attach-btn" onclick="attachFile()" title="Attach file">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+              </svg>
+            </button>
+            <div class="input-wrapper">
+              <textarea id="chatInput" class="chat-input" placeholder="Ask Morgan anything..." rows="1"></textarea>
+            </div>
+            <button class="icon-btn voice-btn" onclick="toggleVoiceInput()" title="Voice input">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            </button>
+            <button class="send-btn" onclick="sendMessage()" id="sendBtn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22,2 15,22 11,13 2,9"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRADING ASSISTANT -->
+    <section id="page-trading" class="page">
+      <div class="page-header">
+        <h1 class="page-title">&#128200; Trading Assistant</h1>
+        <p class="page-subtitle">Analysis, strategy & risk management</p>
+      </div>
+
+      <div class="trading-tabs">
+        <button class="trading-tab active" onclick="switchTradingTab('analysis')">Analysis</button>
+        <button class="trading-tab" onclick="switchTradingTab('journal')">Journal</button>
+        <button class="trading-tab" onclick="switchTradingTab('risk')">Risk</button>
+        <button class="trading-tab" onclick="switchTradingTab('news')">News</button>
+      </div>
+
+      <div id="trading-analysis" class="trading-panel active">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">&#128202; Chart Analysis</h3>
+          </div>
+          <div class="analysis-input">
+            <textarea id="analysisInput" class="analysis-textarea" placeholder="Paste chart description, price action, or upload a screenshot. Morgan will analyze it..."></textarea>
+            <div class="analysis-actions">
+              <button class="btn secondary" onclick="analyzeChart()">Analyze</button>
+              <button class="btn outline" onclick="document.getElementById('chartUpload').click()">Upload Screenshot</button>
+              <input type="file" id="chartUpload" accept="image/*" style="display:none" onchange="handleChartUpload(event)">
+            </div>
+          </div>
+          <div class="analysis-result" id="analysisResult"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">&#128221; Strategy Builder</h3>
+          </div>
+          <div class="strategy-form">
+            <div class="form-row">
+              <label>Strategy Name</label>
+              <input type="text" id="strategyName" class="form-input" placeholder="e.g., Breakout Strategy">
+            </div>
+            <div class="form-row">
+              <label>Entry Rules</label>
+              <textarea id="strategyEntry" class="form-textarea" placeholder="Describe your entry conditions..."></textarea>
+            </div>
+            <div class="form-row">
+              <label>Exit Rules</label>
+              <textarea id="strategyExit" class="form-textarea" placeholder="Describe your exit conditions..."></textarea>
+            </div>
+            <div class="form-row">
+              <label>Risk per Trade (%)</label>
+              <input type="number" id="strategyRisk" class="form-input" value="1" min="0.1" max="100" step="0.1">
+            </div>
+            <button class="btn primary" onclick="saveStrategy()">Save Strategy</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">&#128203; Saved Strategies</h3>
+          </div>
+          <div class="strategy-list" id="strategyList">
+            <div class="strategy-empty">No strategies saved yet</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="trading-journal" class="trading-panel">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">&#128220; Trade Journal</h3>
+            <button class="btn primary small" onclick="addTradeEntry()">+ Add Trade</button>
+          </div>
+          <div class="journal-form" id="journalForm" style="display:none;">
+            <div class="form-grid">
+              <div class="form-row">
+                <label>Pair/Symbol</label>
+                <input type="text" id="journalPair" class="form-input" placeholder="EURUSD">
+              </div>
+              <div class="form-row">
+                <label>Direction</label>
+                <select id="journalDirection" class="form-select">
+                  <option value="buy">Buy / Long</option>
+                  <option value="sell">Sell / Short</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <label>Entry Price</label>
+                <input type="number" id="journalEntry" class="form-input" placeholder="1.0850" step="0.00001">
+              </div>
+              <div class="form-row">
+                <label>Exit Price</label>
+                <input type="number" id="journalExit" class="form-input" placeholder="1.0900" step="0.00001">
+              </div>
+              <div class="form-row">
+                <label>Stop Loss</label>
+                <input type="number" id="journalSL" class="form-input" placeholder="1.0800" step="0.00001">
+              </div>
+              <div class="form-row">
+                <label>Take Profit</label>
+                <input type="number" id="journalTP" class="form-input" placeholder="1.0950" step="0.00001">
+              </div>
+              <div class="form-row full">
+                <label>Notes</label>
+                <textarea id="journalNotes" class="form-textarea" placeholder="What did you observe?"></textarea>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn secondary" onclick="saveTradeEntry()">Save Entry</button>
+              <button class="btn outline" onclick="cancelTradeEntry()">Cancel</button>
+            </div>
+          </div>
+          <div class="journal-list" id="journalList">
+            <div class="journal-empty">No trade entries yet</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="trading-risk" class="trading-panel">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">&#128737; Risk Calculator</h3>
+          </div>
+          <div class="risk-calculator">
+            <div class="form-grid">
+              <div class="form-row">
+                <label>Account Balance ($)</label>
+                <input type="number" id="riskBalance" class="form-input" value="10000" oninput="calculateRisk()">
+              </div>
+              <div class="form-row">
+                <label>Risk per Trade (%)</label>
+                <input type="number" id="riskPercent" class="form-input" value="1" step="0.1" oninput="calculateRisk()">
+              </div>
+              <div class="form-row">
+                <label>Entry Price</label>
+                <input type="number" id="riskEntry" class="form-input" value="1.0850" step="0.00001" oninput="calculateRisk()">
+              </div>
+              <div class="form-row">
+                <label>Stop Loss</label>
+                <input type="number" id="riskStop" class="form-input" value="1.0800" step="0.00001" oninput="calculateRisk()">
+              </div>
+              <div class="form-row">
+                <label>Take Profit</label>
+                <input type="number" id="riskTarget" class="form-input" value="1.0950" step="0.00001" oninput="calculateRisk()">
+              </div>
+            </div>
+            <div class="risk-results" id="riskResults">
+              <div class="risk-result-item">
+                <span class="risk-label">Risk Amount</span>
+                <span class="risk-value" id="riskAmount">$100.00</span>
+              </div>
+              <div class="risk-result-item">
+                <span class="risk-label">Position Size</span>
+                <span class="risk-value" id="positionSize">2,000 units</span>
+              </div>
+              <div class="risk-result-item">
+                <span class="risk-label">Risk:Reward</span>
+                <span class="risk-value" id="riskReward">1:2.0</span>
+              </div>
+              <div class="risk-result-item">
+                <span class="risk-label">Pips at Risk</span>
+                <span class="risk-value" id="pipsRisk">50</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">&#9888; Risk Rules</h3>
+          </div>
+          <div class="risk-rules">
+            <div class="risk-rule">
+              <div class="rule-toggle">
+                <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="rule-text">
+                <div class="rule-title">Max Daily Loss</div>
+                <div class="rule-desc">Stop trading after losing 3% of account</div>
+              </div>
+            </div>
+            <div class="risk-rule">
+              <div class="rule-toggle">
+                <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="rule-text">
+                <div class="rule-title">Max Risk per Trade</div>
+                <div class="rule-desc">Never risk more than 2% on a single trade</div>
+              </div>
+            </div>
+            <div class="risk-rule">
+              <div class="rule-toggle">
+                <div class="toggle-switch" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="rule-text">
+                <div class="rule-title">Consecutive Loss Limit</div>
+                <div class="rule-desc">Take a break after 3 consecutive losses</div>
+              </div>
+            </div>
+            <div class="risk-rule">
+              <div class="rule-toggle">
+                <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="rule-text">
+                <div class="rule-title">Minimum R:R</div>
+                <div class="rule-desc">Only take trades with 1:1.5 risk-reward or better</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="trading-news" class="trading-panel">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">&#128240; Market News</h3>
+          </div>
+          <div class="news-input">
+            <textarea id="newsInput" class="form-textarea" placeholder="Paste market news or an article. Morgan will summarize the key points and trading implications..."></textarea>
+            <button class="btn primary" onclick="summarizeNews()">Summarize</button>
+          </div>
+          <div class="news-result" id="newsResult"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MEMORY -->
+    <section id="page-memory" class="page">
+      <div class="page-header">
+        <h1 class="page-title">&#128218; Memory</h1>
+        <p class="page-subtitle">Conversations, insights & learned patterns</p>
+      </div>
+
+      <div class="memory-stats">
+        <div class="memory-stat-card">
+          <div class="memory-stat-value" id="memoryTotal">0</div>
+          <div class="memory-stat-label">Total Entries</div>
+        </div>
+        <div class="memory-stat-card">
+          <div class="memory-stat-value" id="memoryConversations">0</div>
+          <div class="memory-stat-label">Conversations</div>
+        </div>
+        <div class="memory-stat-card">
+          <div class="memory-stat-value" id="memoryInsights">0</div>
+          <div class="memory-stat-label">Insights</div>
+        </div>
+        <div class="memory-stat-card">
+          <div class="memory-stat-value" id="memorySize">0 KB</div>
+          <div class="memory-stat-label">Storage Used</div>
+        </div>
+      </div>
+
+      <div class="memory-search">
+        <input type="text" id="memorySearch" class="memory-search-input" placeholder="Search memory..." oninput="searchMemory()">
+      </div>
+
+      <div class="memory-filters">
+        <button class="memory-filter active" onclick="filterMemory('all')">All</button>
+        <button class="memory-filter" onclick="filterMemory('chat')">Chat</button>
+        <button class="memory-filter" onclick="filterMemory('trading')">Trading</button>
+        <button class="memory-filter" onclick="filterMemory('insight')">Insights</button>
+      </div>
+
+      <div class="memory-list" id="memoryList">
+        <div class="memory-empty">Memory is empty. Start chatting to build your knowledge base.</div>
+      </div>
+    </section>
+
+    <!-- VOICE -->
+    <section id="page-voice" class="page">
+      <div class="page-header">
+        <h1 class="page-title">&#127908; Voice Assistant</h1>
+        <p class="page-subtitle">Speak to Morgan hands-free</p>
+      </div>
+
+      <div class="voice-center">
+        <div class="voice-orb" id="voiceOrb" onclick="toggleVoice()">
+          <div class="voice-orb-inner">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+          </div>
+          <div class="voice-orb-waves" id="voiceWaves">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="voice-status" id="voiceStatus">Tap to speak</div>
+        <div class="voice-transcript" id="voiceTranscript"></div>
+      </div>
+
+      <div class="voice-settings">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">&#127911; Voice Settings</h3>
+          </div>
+          <div class="setting-row">
+            <span class="setting-name">Wake Word</span>
+            <div class="toggle-switch" id="wakeWordToggle" onclick="toggleWakeWord()"></div>
+          </div>
+          <div class="setting-row">
+            <span class="setting-name">Voice Feedback</span>
+            <div class="toggle-switch on" id="voiceFeedbackToggle" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="setting-row">
+            <span class="setting-name">Language</span>
+            <select class="setting-select" id="voiceLang">
+              <option value="en-US">English (US)</option>
+              <option value="en-GB">English (UK)</option>
+              <option value="es-ES">Spanish</option>
+              <option value="fr-FR">French</option>
+              <option value="de-DE">German</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="page-settings" class="page">
+      <div class="page-header">
+        <h1 class="page-title">&#9881; Settings</h1>
+        <p class="page-subtitle">Configure your AI brain</p>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">&#128273; API Keys</div>
+
+        <div class="setting-card">
+          <div class="setting-info">
+            <div class="setting-label">BazaarLink API Key</div>
+            <div class="setting-desc">Your BazaarLink API key for AI access</div>
+          </div>
+          <div class="setting-control">
+            <input type="password" id="bazaarKey" class="setting-input-key" placeholder="sk-...">
+            <button class="btn small" onclick="saveApiKey('bazaarlink')">Save</button>
+          </div>
+        </div>
+
+        <div class="setting-card">
+          <div class="setting-info">
+            <div class="setting-label">Base URL</div>
+            <div class="setting-desc">BazaarLink API endpoint</div>
+          </div>
+          <div class="setting-control">
+            <input type="text" id="baseUrl" class="setting-input-key" value="https://bazaarlink.ai/api/v1">
+            <button class="btn small" onclick="saveBaseUrl()">Save</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">&#129504; AI Configuration</div>
+
+        <div class="setting-card">
+          <div class="setting-info">
+            <div class="setting-label">Default Model</div>
+            <div class="setting-desc">Primary AI model for general queries</div>
+          </div>
+          <div class="setting-control">
+            <select id="defaultModel" class="setting-select">
+              <option value="openai/gpt-5.1">GPT-5.1</option>
+              <option value="anthropic/claude-sonnet-4">Claude Sonnet</option>
+              <option value="google/gemini-2.5-pro">Gemini Pro</option>
+              <option value="deepseek/deepseek-r1">DeepSeek R1</option>
+              <option value="meta/llama-4">Llama 4</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="setting-card">
+          <div class="setting-info">
+            <div class="setting-label">Smart Routing</div>
+            <div class="setting-desc">Automatically pick the best model per task</div>
+          </div>
+          <div class="setting-control">
+            <div class="toggle-switch on" id="smartRoutingToggle" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+
+        <div class="setting-card">
+          <div class="setting-info">
+            <div class="setting-label">Temperature</div>
+            <div class="setting-desc">Creativity level (0 = precise, 1 = creative)</div>
+          </div>
+          <div class="setting-control">
+            <input type="range" id="temperature" class="setting-slider" min="0" max="1" step="0.1" value="0.7">
+            <span class="slider-value" id="tempValue">0.7</span>
+          </div>
+        </div>
+
+        <div class="setting-card">
+          <div class="setting-info">
+            <div class="setting-label">Max Tokens</div>
+            <div class="setting-desc">Maximum response length</div>
+          </div>
+          <div class="setting-control">
+            <select id="maxTokens" class="setting-select">
+              <option value="1024">1,024</option>
+              <option value="2048">2,048</option>
+              <option value="4096" selected>4,096</option>
+              <option value="8192">8,192</option>
+              <option value="16384">16,384</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">&#128295; App Settings</div>
+
+        <div class="setting-card">
+          <div class="setting-info">
+            <div class="setting-label">Dark Mode</div>
+            <div class="setting-desc">Always use dark theme</div>
+          </div>
+          <div class="setting-control">
+            <div class="toggle-switch on" id="darkModeToggle" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+
+        <div class="setting-card">
+          <div class="setting-info">
+            <div class="setting-label">Sound Effects</div>
+            <div class="setting-desc">Play sounds for notifications</div>
+          </div>
+          <div class="setting-control">
+            <div class="toggle-switch on" id="soundToggle" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+
+        <div class="setting-card">
+          <div class="setting-info">
+            <div class="setting-label">Auto-Save Memory</div>
+            <div class="setting-desc">Save conversations automatically</div>
+          </div>
+          <div class="setting-control">
+            <div class="toggle-switch on" id="autoSaveToggle" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">&#128683; Data</div>
+
+        <div class="setting-card danger">
+          <div class="setting-info">
+            <div class="setting-label">Clear All Memory</div>
+            <div class="setting-desc">Delete all conversations and insights</div>
+          </div>
+          <div class="setting-control">
+            <button class="btn danger" onclick="clearAllMemory()">Clear</button>
+          </div>
+        </div>
+
+        <div class="setting-card danger">
+          <div class="setting-info">
+            <div class="setting-label">Export Data</div>
+            <div class="setting-desc">Download all your data as JSON</div>
+          </div>
+          <div class="setting-control">
+            <button class="btn outline" onclick="exportAllData()">Export</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section id="page-about" class="page">
+      <div class="about-center">
+        <div class="about-logo">
+          <svg viewBox="0 0 100 100" width="80" height="80">
+            <defs>
+              <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#00f0ff;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#7000ff;stop-opacity:1" />
+              </linearGradient>
+            </defs>
+            <polygon points="50,5 95,25 95,75 50,95 5,75 5,25" fill="none" stroke="url(#grad2)" stroke-width="2"/>
+            <polygon points="50,20 80,35 80,65 50,80 20,65 20,35" fill="url(#grad2)" opacity="0.3"/>
+            <text x="50" y="58" text-anchor="middle" fill="#00f0ff" font-family="Orbitron" font-size="28" font-weight="900">M</text>
+          </svg>
+        </div>
+        <h1 class="about-title">MORGAN AI</h1>
+        <p class="about-version">Version 1.0.0 Foundation</p>
+        <p class="about-desc">Personal Intelligence System</p>
+
+        <div class="about-section">
+          <h3>Built With</h3>
+          <div class="about-tags">
+            <span class="about-tag">HTML5</span>
+            <span class="about-tag">CSS3</span>
+            <span class="about-tag">JavaScript</span>
+            <span class="about-tag">Capacitor</span>
+            <span class="about-tag">BazaarLink API</span>
+          </div>
+        </div>
+
+        <div class="about-section">
+          <h3>AI Models</h3>
+          <div class="about-tags">
+            <span class="about-tag">GPT-5.1</span>
+            <span class="about-tag">Claude Sonnet</span>
+            <span class="about-tag">Gemini Pro</span>
+            <span class="about-tag">DeepSeek R1</span>
+            <span class="about-tag">Llama 4</span>
+          </div>
+        </div>
+
+        <div class="about-footer">
+          <p>Developed for personal intelligence and trading assistance.</p>
+          <p class="about-legal">Trading involves risk. Morgan provides analysis and education, not financial advice.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast Notifications -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Floating Action Button -->
+  <button class="fab" id="fab" onclick="quickAction()">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  </button>
+
+</div>
+
+<script src="memory.js"></script>
+<script src="ai.js"></script>
+<script src="trading.js"></script>
+<script src="voice.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

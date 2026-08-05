@@ -1,0 +1,14 @@
+{
+  "appId": "com.morganai.app",
+  "appName": "MORGAN AI",
+  "webDir": ".",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    }
+  }
+}
