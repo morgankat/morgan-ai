@@ -1,35 +1,57 @@
 // ===== MORGAN AI - AI ENGINE =====
-// BazaarLink API integration with smart model routing
+// Routes through morgan-ai-proxy (Cloudflare Worker) so API keys stay hidden
+// and requests aren't blocked by CORS.
 
 const AI = {
-  baseUrl: localStorage.getItem('morgan_baseUrl') || 'https://bazaarlink.ai/api/v1',
-  apiKey: localStorage.getItem('morgan_apiKey') || '',
+  // Your Cloudflare Worker proxy URL
+  proxyUrl: 'https://morgan-ai-proxy.morgankaterega30.workers.dev',
+
+  // Which provider to use. "bazaarlink" gives access to many models
+  // through one gateway; switch to 'groq' or 'gemini' if you prefer.
+  provider: localStorage.getItem('morgan_provider') || 'bazaarlink',
 
   models: {
     'openai/gpt-5.1': {
       name: 'GPT-5.1',
+      provider: 'bazaarlink',
       strengths: ['reasoning', 'coding', 'planning', 'general'],
       temperature: 0.7
     },
-    'anthropic/claude-sonnet-4': {
+    'anthropic/claude-sonnet-4.6': {
       name: 'Claude Sonnet',
+      provider: 'bazaarlink',
       strengths: ['code', 'analysis', 'long_docs'],
       temperature: 0.5
     },
     'google/gemini-2.5-pro': {
       name: 'Gemini Pro',
+      provider: 'bazaarlink',
       strengths: ['vision', 'multimodal', 'documents'],
       temperature: 0.6
     },
     'deepseek/deepseek-r1': {
       name: 'DeepSeek R1',
+      provider: 'bazaarlink',
       strengths: ['math', 'technical', 'reasoning'],
       temperature: 0.3
     },
     'meta/llama-4': {
       name: 'Llama 4',
+      provider: 'bazaarlink',
       strengths: ['fast', 'general'],
       temperature: 0.8
+    },
+    'llama-3.3-70b-versatile': {
+      name: 'Llama 3.3 70B (Groq)',
+      provider: 'groq',
+      strengths: ['fast', 'general', 'coding'],
+      temperature: 0.7
+    },
+    'gemini-2.5-flash': {
+      name: 'Gemini Flash (direct)',
+      provider: 'gemini',
+      strengths: ['fast', 'multimodal'],
+      temperature: 0.6
     }
   },
 
@@ -40,7 +62,7 @@ const AI = {
     if (hasImage) return 'google/gemini-2.5-pro';
 
     if (/\b(code|program|function|script|bug|error|debug|python|javascript|java|cpp|c\+\+|html|css|sql|api)\b/.test(m)) {
-      return 'anthropic/claude-sonnet-4';
+      return 'anthropic/claude-sonnet-4.6';
     }
 
     if (/\b(math|calculate|equation|formula|algebra|geometry|statistics|probability)\b/.test(m)) {
@@ -59,15 +81,19 @@ const AI = {
   },
 
   async sendMessage(message, modelOverride, imageData) {
-    const model = modelOverride === 'auto' || !modelOverride 
+    const model = modelOverride === 'auto' || !modelOverride
       ? this.routeModel(message, !!imageData)
       : modelOverride;
+
+    const modelInfo = this.models[model];
+    const provider = modelInfo ? modelInfo.provider : 'bazaarlink';
 
     const settings = this.loadSettings();
     const temperature = parseFloat(settings.temperature) || 0.7;
     const maxTokens = parseInt(settings.maxTokens) || 4096;
 
     const body = {
+      provider: provider,
       model: model,
       messages: [
         {
@@ -77,7 +103,7 @@ const AI = {
         ...this.buildContext(),
         {
           role: 'user',
-          content: imageData 
+          content: imageData
             ? [{ type: 'text', text: message }, { type: 'image_url', image_url: { url: imageData } }]
             : message
         }
@@ -88,11 +114,10 @@ const AI = {
     };
 
     try {
-      const response = await fetch(this.baseUrl + '/chat/completions', {
+      const response = await fetch(this.proxyUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + this.apiKey
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(body)
       });
@@ -105,7 +130,6 @@ const AI = {
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content || 'No response received.';
 
-      // Save to memory
       Memory.addConversation('user', message, model);
       Memory.addConversation('assistant', content, model);
 
@@ -138,7 +162,7 @@ const AI = {
 
   async analyzeStrategy(strategy) {
     const prompt = `Review this trading strategy and provide feedback on: 1) Strengths, 2) Weaknesses, 3) Risk management gaps, 4) Suggested improvements.\n\nStrategy: ${JSON.stringify(strategy)}`;
-    return this.sendMessage(prompt, 'anthropic/claude-sonnet-4');
+    return this.sendMessage(prompt, 'anthropic/claude-sonnet-4.6');
   },
 
   loadSettings() {
@@ -150,18 +174,9 @@ const AI = {
   },
 
   testConnection() {
-    return new Promise((resolve) => {
-      if (!this.apiKey) {
-        resolve(false);
-        return;
-      }
-
-      fetch(this.baseUrl + '/models', {
-        headers: { 'Authorization': 'Bearer ' + this.apiKey }
-      })
-      .then(r => resolve(r.ok))
-      .catch(() => resolve(false));
-    });
+    return fetch(this.proxyUrl, { method: 'GET' })
+      .then(r => r.ok)
+      .catch(() => false);
   }
 };
 
