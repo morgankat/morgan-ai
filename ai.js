@@ -136,6 +136,38 @@ For coding, planning, or anything else — be equally direct and useful. Current
     }
   },
 
+  async generateOrEditImage(prompt, imageDataUrl) {
+    const body = { provider: 'gemini-image', prompt: prompt };
+
+    if (imageDataUrl) {
+      const match = imageDataUrl.match(/^data:(.+);base64,(.*)$/);
+      if (match) {
+        body.mimeType = match[1];
+        body.imageBase64 = match[2];
+      }
+    }
+
+    const response = await fetch(this.proxyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error('Image generation error: ' + response.status + ' - ' + err);
+    }
+
+    const data = await response.json();
+    if (data.imageBase64) {
+      return {
+        imageUrl: 'data:' + (data.mimeType || 'image/png') + ';base64,' + data.imageBase64,
+        text: data.text || ''
+      };
+    }
+    throw new Error(data.error || data.text || 'No image was returned.');
+  },
+
   buildContext() {
     const convs = Memory.getConversations(10);
     const context = [];
