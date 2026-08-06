@@ -1,83 +1,75 @@
 // ===== MORGAN AI - AI ENGINE =====
 // Routes through morgan-ai-proxy (Cloudflare Worker) so API keys stay hidden
 // and requests aren't blocked by CORS.
+// Default provider: Groq (fast, generous free tier).
 
 const AI = {
-  // Your Cloudflare Worker proxy URL
   proxyUrl: 'https://morgan-ai-proxy.morgankaterega30.workers.dev',
 
-  // Which provider to use. "bazaarlink" gives access to many models
-  // through one gateway; switch to 'groq' or 'gemini' if you prefer.
-  provider: localStorage.getItem('morgan_provider') || 'bazaarlink',
+  provider: localStorage.getItem('morgan_provider') || 'groq',
 
   models: {
-    'openai/gpt-5.1': {
-      name: 'GPT-5.1',
-      provider: 'bazaarlink',
+    'llama-3.3-70b-versatile': {
+      name: 'Llama 3.3 70B',
+      provider: 'groq',
       strengths: ['reasoning', 'coding', 'planning', 'general'],
       temperature: 0.7
     },
-    'anthropic/claude-sonnet-4.6': {
-      name: 'Claude Sonnet',
-      provider: 'bazaarlink',
-      strengths: ['code', 'analysis', 'long_docs'],
-      temperature: 0.5
-    },
-    'google/gemini-2.5-pro': {
-      name: 'Gemini Pro',
-      provider: 'bazaarlink',
-      strengths: ['vision', 'multimodal', 'documents'],
-      temperature: 0.6
-    },
-    'deepseek/deepseek-r1': {
-      name: 'DeepSeek R1',
-      provider: 'bazaarlink',
-      strengths: ['math', 'technical', 'reasoning'],
-      temperature: 0.3
-    },
-    'meta/llama-4': {
-      name: 'Llama 4',
-      provider: 'bazaarlink',
+    'llama-3.1-8b-instant': {
+      name: 'Llama 3.1 8B (Fast)',
+      provider: 'groq',
       strengths: ['fast', 'general'],
       temperature: 0.8
     },
-    'llama-3.3-70b-versatile': {
-      name: 'Llama 3.3 70B (Groq)',
+    'deepseek-r1-distill-llama-70b': {
+      name: 'DeepSeek R1 Distill',
       provider: 'groq',
-      strengths: ['fast', 'general', 'coding'],
+      strengths: ['math', 'technical', 'reasoning'],
+      temperature: 0.3
+    },
+    'gemma2-9b-it': {
+      name: 'Gemma 2 9B',
+      provider: 'groq',
+      strengths: ['fast', 'general'],
       temperature: 0.7
     },
     'gemini-2.5-flash': {
-      name: 'Gemini Flash (direct)',
+      name: 'Gemini Flash (vision)',
       provider: 'gemini',
-      strengths: ['fast', 'multimodal'],
+      strengths: ['vision', 'multimodal', 'documents'],
       temperature: 0.6
+    },
+    'openai/gpt-5.1': {
+      name: 'GPT-5.1 (BazaarLink)',
+      provider: 'bazaarlink',
+      strengths: ['reasoning', 'coding', 'planning', 'general'],
+      temperature: 0.7
     }
   },
 
-  // Smart routing based on query content
+  // Smart routing based on query content — all default routes use Groq now
   routeModel(message, hasImage) {
     const m = message.toLowerCase();
 
-    if (hasImage) return 'google/gemini-2.5-pro';
+    if (hasImage) return 'gemini-2.5-flash';
 
     if (/\b(code|program|function|script|bug|error|debug|python|javascript|java|cpp|c\+\+|html|css|sql|api)\b/.test(m)) {
-      return 'anthropic/claude-sonnet-4.6';
+      return 'llama-3.3-70b-versatile';
     }
 
     if (/\b(math|calculate|equation|formula|algebra|geometry|statistics|probability)\b/.test(m)) {
-      return 'deepseek/deepseek-r1';
+      return 'deepseek-r1-distill-llama-70b';
     }
 
     if (/\b(chart|image|screenshot|photo|picture|analyze.*image|describe.*image)\b/.test(m)) {
-      return 'google/gemini-2.5-pro';
+      return 'gemini-2.5-flash';
     }
 
     if (/\b(hello|hi|hey|how are you|what.*up|quick|fast)\b/.test(m) && message.length < 50) {
-      return 'meta/llama-4';
+      return 'llama-3.1-8b-instant';
     }
 
-    return 'openai/gpt-5.1';
+    return 'llama-3.3-70b-versatile';
   },
 
   async sendMessage(message, modelOverride, imageData) {
@@ -86,7 +78,7 @@ const AI = {
       : modelOverride;
 
     const modelInfo = this.models[model];
-    const provider = modelInfo ? modelInfo.provider : 'bazaarlink';
+    const provider = modelInfo ? modelInfo.provider : 'groq';
 
     const settings = this.loadSettings();
     const temperature = parseFloat(settings.temperature) || 0.7;
@@ -152,17 +144,17 @@ const AI = {
 
   async analyzeChart(description, imageData) {
     const prompt = `Analyze this trading chart/scenario. Provide: 1) Key levels (support/resistance), 2) Trend direction, 3) Potential entry points, 4) Risk management suggestions, 5) Overall bias (bullish/bearish/neutral).\n\nChart info: ${description}`;
-    return this.sendMessage(prompt, 'google/gemini-2.5-pro', imageData);
+    return this.sendMessage(prompt, 'gemini-2.5-flash', imageData);
   },
 
   async summarizeNews(newsText) {
     const prompt = `Summarize this market news and provide trading implications. Format: 1) Key Points (bullet list), 2) Market Impact, 3) Trading Implications, 4) Risk Considerations.\n\nNews: ${newsText}`;
-    return this.sendMessage(prompt, 'openai/gpt-5.1');
+    return this.sendMessage(prompt, 'llama-3.3-70b-versatile');
   },
 
   async analyzeStrategy(strategy) {
     const prompt = `Review this trading strategy and provide feedback on: 1) Strengths, 2) Weaknesses, 3) Risk management gaps, 4) Suggested improvements.\n\nStrategy: ${JSON.stringify(strategy)}`;
-    return this.sendMessage(prompt, 'anthropic/claude-sonnet-4.6');
+    return this.sendMessage(prompt, 'llama-3.3-70b-versatile');
   },
 
   loadSettings() {
