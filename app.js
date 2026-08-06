@@ -2,6 +2,7 @@
 
 let currentPage = 'dashboard';
 let sidebarOpen = false;
+let pendingImage = null;
 
 // ===== BOOT SEQUENCE =====
 function runBootSequence() {
@@ -31,7 +32,6 @@ function runBootSequence() {
         if (boot) boot.classList.add('hidden');
         if (app) app.classList.remove('hidden');
 
-        // Load saved settings into UI
         loadSettingsUI();
         updateAIStatus();
         Memory.renderActivity();
@@ -47,29 +47,22 @@ function runBootSequence() {
 function navigateTo(page) {
   currentPage = page;
 
-  // Hide all pages
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
 
-  // Show target page
   const target = document.getElementById('page-' + page);
   if (target) target.classList.add('active');
 
-  // Update sidebar
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const navItem = document.querySelector('.nav-item[onclick*="' + page + '"]');
   if (navItem) navItem.classList.add('active');
 
-  // Close sidebar
   if (sidebarOpen) toggleSidebar();
 
-  // Scroll to top
   window.scrollTo(0, 0);
 
-  // Page-specific init
   if (page === 'memory') renderMemoryList();
   if (page === 'settings') loadSettingsUI();
 
-  // Update FAB
   updateFAB(page);
 }
 
@@ -106,14 +99,14 @@ function sendMessage() {
   const messages = document.getElementById('chatMessages');
 
   const text = input.value.trim();
-  if (!text) return;
+  const imageToSend = pendingImage;
+  if (!text && !imageToSend) return;
 
-  // Add user message
-  addMessageToChat('user', text);
+  addMessageToChat('user', text || 'Please analyze this image.', null, imageToSend);
   input.value = '';
   input.style.height = 'auto';
+  removePendingImage();
 
-  // Show typing
   if (typing) typing.style.display = 'block';
   if (sendBtn) sendBtn.disabled = true;
   messages.scrollTop = messages.scrollHeight;
@@ -121,17 +114,16 @@ function sendMessage() {
   const modelSelect = document.getElementById('modelSelect');
   const selectedModel = modelSelect ? modelSelect.value : 'auto';
 
-  AI.sendMessage(text, selectedModel)
+  AI.sendMessage(text || 'Please analyze this image.', selectedModel, imageToSend)
     .then(res => {
       if (typing) typing.style.display = 'none';
       if (sendBtn) sendBtn.disabled = false;
       addMessageToChat('bot', res.content, res.model);
       messages.scrollTop = messages.scrollHeight;
 
-      // Voice feedback
       const voiceToggle = document.getElementById('voiceFeedbackToggle');
-      if (voiceToggle && voiceToggle.classList.contains('on')) {
-        speak(res.content.substring(0, 150));
+      if (voiceToggle && voiceToggle.classList.contains('on') && typeof speak === 'function') {
+        speak(res.content);
       }
     })
     .catch(err => {
@@ -142,7 +134,7 @@ function sendMessage() {
     });
 }
 
-function addMessageToChat(role, text, model) {
+function addMessageToChat(role, text, model, imageUrl) {
   const messages = document.getElementById('chatMessages');
   if (!messages) return;
 
@@ -151,10 +143,12 @@ function addMessageToChat(role, text, model) {
 
   const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const modelTag = model && role === 'bot' ? `<span style="font-size:10px;color:var(--text-muted);display:block;margin-top:4px;">via ${model.split('/').pop()}</span>` : '';
+  const imageTag = imageUrl ? `<img src="${imageUrl}" style="max-width:220px;border-radius:8px;margin-bottom:6px;display:block;">` : '';
 
   div.innerHTML = `
     <div class="message-avatar">${role === 'user' ? '&#128100;' : '&#129504;'}</div>
     <div class="message-content">
+      ${imageTag}
       <div class="message-text">${formatMessage(text)}</div>
       <div class="message-time">${time}</div>
       ${modelTag}
@@ -218,8 +212,66 @@ function exportChat() {
   showToast('Chat exported', 'success');
 }
 
+// ===== IMAGE ATTACHMENT =====
 function attachFile() {
-  showToast('File attach coming in v1.1', 'info');
+  let input = document.getElementById('hiddenFileInput');
+  if (!input) {
+    input = document.createElement('input');
+    input.type = 'file';
+    input.id = 'hiddenFileInput';
+    input.accept = 'image/*';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+    input.addEventListener('change', handleFileSelect);
+  }
+  input.value = '';
+  input.click();
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    showToast('Only images are supported right now', 'error');
+    return;
+  }
+
+  if (file.size > 8 * 1024 * 1024) {
+    showToast('Image too large — please use one under 8MB', 'error');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    pendingImage = evt.target.result;
+    showImagePreview(pendingImage);
+    showToast('Image attached — add a message (optional) and press send', 'success');
+  };
+  reader.readAsDataURL(file);
+}
+
+function showImagePreview(dataUrl) {
+  let preview = document.getElementById('imagePreviewBar');
+  if (!preview) {
+    preview = document.createElement('div');
+    preview.id = 'imagePreviewBar';
+    preview.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;';
+    const inputArea = document.querySelector('.chat-input-area');
+    if (inputArea) inputArea.insertBefore(preview, inputArea.firstChild);
+  }
+  preview.innerHTML = `
+    <img src="${dataUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">
+    <span style="font-size:12px;color:var(--text-muted);">Image attached</span>
+    <button onclick="removePendingImage()" style="background:none;border:1px solid var(--border);color:var(--accent-cyan);font-size:11px;padding:2px 8px;border-radius:4px;">Remove</button>
+  `;
+  preview.style.display = 'flex';
+}
+
+function removePendingImage() {
+  pendingImage = null;
+  const preview = document.getElementById('imagePreviewBar');
+  if (preview) preview.style.display = 'none';
 }
 
 // Auto-resize textarea
@@ -304,7 +356,7 @@ function clearActivity() {
 function loadSettingsUI() {
   const apiKey = localStorage.getItem('morgan_apiKey') || '';
   const baseUrl = localStorage.getItem('morgan_baseUrl') || 'https://bazaarlink.ai/api/v1';
-  const defaultModel = localStorage.getItem('morgan_defaultModel') || 'openai/gpt-5.1';
+  const defaultModel = localStorage.getItem('morgan_defaultModel') || 'auto';
   const temperature = localStorage.getItem('morgan_temperature') || '0.7';
   const maxTokens = localStorage.getItem('morgan_maxTokens') || '4096';
 
@@ -322,7 +374,6 @@ function loadSettingsUI() {
   if (elTempVal) elTempVal.textContent = temperature;
   if (elTokens) elTokens.value = maxTokens;
 
-  // Temperature slider listener
   if (elTemp) {
     elTemp.oninput = function() {
       if (elTempVal) elTempVal.textContent = this.value;
@@ -337,7 +388,6 @@ function saveApiKey(provider) {
     return;
   }
   localStorage.setItem('morgan_apiKey', key);
-  AI.apiKey = key;
   showToast('API key saved', 'success');
   updateAIStatus();
 }
@@ -349,7 +399,6 @@ function saveBaseUrl() {
     return;
   }
   localStorage.setItem('morgan_baseUrl', url);
-  AI.baseUrl = url;
   showToast('Base URL saved', 'success');
 }
 
@@ -383,7 +432,6 @@ document.addEventListener('DOMContentLoaded', () => {
   runBootSequence();
   initChatInput();
 
-  // Save settings on change
   document.getElementById('defaultModel')?.addEventListener('change', (e) => {
     localStorage.setItem('morgan_defaultModel', e.target.value);
   });
