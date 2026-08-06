@@ -33,7 +33,7 @@ const AI = {
       strengths: ['fast', 'general'],
       temperature: 0.7
     },
-    'gemini-2.5-flash': {
+    'gemini-flash-latest': {
       name: 'Gemini Flash (vision)',
       provider: 'gemini',
       strengths: ['vision', 'multimodal', 'documents'],
@@ -51,7 +51,7 @@ const AI = {
   routeModel(message, hasImage) {
     const m = message.toLowerCase();
 
-    if (hasImage) return 'gemini-2.5-flash';
+    if (hasImage) return 'gemini-flash-latest';
 
     if (/\b(code|program|function|script|bug|error|debug|python|javascript|java|cpp|c\+\+|html|css|sql|api)\b/.test(m)) {
       return 'llama-3.3-70b-versatile';
@@ -62,7 +62,7 @@ const AI = {
     }
 
     if (/\b(chart|image|screenshot|photo|picture|analyze.*image|describe.*image)\b/.test(m)) {
-      return 'gemini-2.5-flash';
+      return 'gemini-flash-latest';
     }
 
     if (/\b(hello|hi|hey|how are you|what.*up|quick|fast)\b/.test(m) && message.length < 50) {
@@ -144,7 +144,7 @@ const AI = {
 
   async analyzeChart(description, imageData) {
     const prompt = `Analyze this trading chart/scenario. Provide: 1) Key levels (support/resistance), 2) Trend direction, 3) Potential entry points, 4) Risk management suggestions, 5) Overall bias (bullish/bearish/neutral).\n\nChart info: ${description}`;
-    return this.sendMessage(prompt, 'gemini-2.5-flash', imageData);
+    return this.sendMessage(prompt, 'gemini-flash-latest', imageData);
   },
 
   async summarizeNews(newsText) {
