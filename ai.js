@@ -109,30 +109,47 @@ For coding, planning, or anything else — be equally direct and useful. Current
       stream: false
     };
 
-    try {
-      const response = await fetch(this.proxyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      });
+    const RETRYABLE_STATUSES = [429, 500, 502, 503, 504];
+    const MAX_RETRIES = 3;
 
-      if (!response.ok) {
-        const err = await response.text();
-        throw new Error('API Error: ' + response.status + ' - ' + err);
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const response = await fetch(this.proxyUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+
+          // Don't retry permanent errors like "insufficient credits" or bad auth
+          if (!RETRYABLE_STATUSES.includes(response.status) || attempt === MAX_RETRIES) {
+            throw new Error('API Error: ' + response.status + ' - ' + errText);
+          }
+
+          // Wait longer each retry (1s, 2.5s, 5s), then try again
+          await new Promise(r => setTimeout(r, [1000, 2500, 5000][attempt] || 5000));
+          continue;
+        }
+
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content || 'No response received.';
+
+        Memory.addConversation('user', message, model);
+        Memory.addConversation('assistant', content, model);
+
+        return { content, model };
+      } catch (error) {
+        if (attempt === MAX_RETRIES) {
+          console.error('AI Error:', error);
+          throw error;
+        }
+        // Network-level failure (e.g. "Failed to fetch") — also worth retrying
+        await new Promise(r => setTimeout(r, [1000, 2500, 5000][attempt] || 5000));
       }
-
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content || 'No response received.';
-
-      Memory.addConversation('user', message, model);
-      Memory.addConversation('assistant', content, model);
-
-      return { content, model };
-    } catch (error) {
-      console.error('AI Error:', error);
-      throw error;
     }
   },
 
