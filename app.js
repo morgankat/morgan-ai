@@ -92,6 +92,13 @@ function quickAction() {
 }
 
 // ===== CHAT =====
+function isImageRequest(text) {
+  const t = text.toLowerCase();
+  const editVerbs = /\b(edit|change|remove|add|apply|retouch|redraw|recolor|enhance|colorize|photoshop|make it|turn (it|this) into)\b/;
+  const genVerbs = /\b(generate|create|draw|design|make)\s+(me\s+)?(an?\s+)?(image|photo|picture|pic|logo|art|wallpaper|poster|drawing|illustration)\b/;
+  return editVerbs.test(t) || genVerbs.test(t);
+}
+
 function sendMessage() {
   const input = document.getElementById('chatInput');
   const sendBtn = document.getElementById('sendBtn');
@@ -110,6 +117,29 @@ function sendMessage() {
   if (typing) typing.style.display = 'block';
   if (sendBtn) sendBtn.disabled = true;
   messages.scrollTop = messages.scrollHeight;
+
+  // Route actual image creation/editing requests to the real image model
+  if (text && isImageRequest(text)) {
+    AI.generateOrEditImage(text, imageToSend)
+      .then(res => {
+        if (typing) typing.style.display = 'none';
+        if (sendBtn) sendBtn.disabled = false;
+        addMessageToChat('bot', res.text || 'Here you go!', 'gemini-image', res.imageUrl);
+        messages.scrollTop = messages.scrollHeight;
+
+        const voiceToggle = document.getElementById('voiceFeedbackToggle');
+        if (voiceToggle && voiceToggle.classList.contains('on') && typeof speak === 'function' && res.text) {
+          speak(res.text);
+        }
+      })
+      .catch(err => {
+        if (typing) typing.style.display = 'none';
+        if (sendBtn) sendBtn.disabled = false;
+        addMessageToChat('bot', "Sorry, I couldn't create that image: " + err.message);
+        messages.scrollTop = messages.scrollHeight;
+      });
+    return;
+  }
 
   const modelSelect = document.getElementById('modelSelect');
   const selectedModel = modelSelect ? modelSelect.value : 'auto';
